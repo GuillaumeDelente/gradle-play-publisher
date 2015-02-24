@@ -1,4 +1,4 @@
-package de.triplet.gradle.play
+package com.guillaumedelente.gradle.play
 
 import com.android.build.gradle.api.ApkVariantOutput
 import com.android.build.gradle.api.ApplicationVariant
@@ -20,15 +20,17 @@ class PlayPublishApkTask extends PlayPublishTask {
     @TaskAction
     publishApk() {
         super.publish()
-
+        logger.warn("Getting extension file ${extension.pk12File} for variant ${variant.name}")
         def apkOutput = variant.outputs.find { variantOutput -> variantOutput instanceof ApkVariantOutput }
         FileContent newApkFile = new FileContent(AndroidPublisherHelper.MIME_TYPE_APK, apkOutput.outputFile)
 
         Apk apk = edits.apks()
                 .upload(applicationId, editId, newApkFile)
                 .execute()
-
         Track newTrack = new Track().setVersionCodes([apk.getVersionCode()])
+        if (extension.userFraction != null) {
+            newTrack.setUserFraction(extension.userFraction)
+        }
         edits.tracks()
                 .update(applicationId, editId, extension.track, newTrack)
                 .execute()
@@ -58,5 +60,4 @@ class PlayPublishApkTask extends PlayPublishTask {
 
         edits.commit(applicationId, editId).execute()
     }
-
 }

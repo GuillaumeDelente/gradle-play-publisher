@@ -1,4 +1,4 @@
-package de.triplet.gradle.play
+package com.guillaumedelente.gradle.play
 
 import com.google.api.services.androidpublisher.model.Apk
 import com.google.api.services.androidpublisher.model.ApkListing

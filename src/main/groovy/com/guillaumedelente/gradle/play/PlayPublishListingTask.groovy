@@ -1,4 +1,4 @@
-package de.triplet.gradle.play
+package com.guillaumedelente.gradle.play
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.http.AbstractInputStreamContent

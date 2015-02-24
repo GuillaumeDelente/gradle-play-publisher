@@ -1,5 +1,6 @@
-package de.triplet.gradle.play
+package com.guillaumedelente.gradle.play
 
+import com.guillaumedelente.gradle.play.TaskHelper
 import org.junit.Test
 
 import static org.junit.Assert.*

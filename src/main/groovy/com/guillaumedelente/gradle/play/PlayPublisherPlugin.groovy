@@ -1,7 +1,5 @@
-package de.triplet.gradle.play
-
+package com.guillaumedelente.gradle.play
 import com.android.build.gradle.AppPlugin
-import org.apache.commons.lang.StringUtils
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -18,14 +16,19 @@ class PlayPublisherPlugin implements Plugin<Project> {
             throw new IllegalStateException("The 'com.android.application' plugin is required.")
         }
 
-        def extension = project.extensions.create('play', PlayPublisherPluginExtension)
+        //def extension = project.extensions.create('publishingConfigs', PlayPublisherPluginExtension)
 
+        def publishingConfigs = project.container(PublishingConfig)
+        project.extensions.publishingConfigs = publishingConfigs
+        log.warn 'PublishingConfigs parsing success'
         project.android.applicationVariants.all { variant ->
             if (variant.buildType.isDebuggable()) {
                 log.debug("Skipping debuggable build type ${variant.buildType.name}.")
                 return
             }
-
+            project.publishingConfigs.all { publishingConfig ->
+                checkTrack(project, publishingConfig)
+            }
             def buildTypeName = variant.buildType.name.capitalize()
 
             def productFlavorNames = variant.productFlavors.collect { it.name.capitalize() }
@@ -33,7 +36,7 @@ class PlayPublisherPlugin implements Plugin<Project> {
                 productFlavorNames = [""]
             }
             def productFlavorName = productFlavorNames.join('')
-            def flavor = StringUtils.uncapitalize(productFlavorName)
+            def flavor = productFlavorName.toLowerCase()
 
             def variationName = "${productFlavorName}${buildTypeName}"
             def variantApplicationId = variant.applicationId
@@ -53,12 +56,15 @@ class PlayPublisherPlugin implements Plugin<Project> {
                 log.warn("Could not find ZipAlign task. Did you specify a signingConfig for the variation ${variationName}?")
                 return
             }
+            def publishingConfigName = variationName[0].toLowerCase() + variationName.substring(1)
+            project.publishingConfigs.maybeCreate(publishingConfigName)
+            PublishingConfig publishingConfig = publishingConfigs.findByName(publishingConfigName)
 
             // Create and configure bootstrap task for this variant.
             def bootstrapTask = project.tasks.create(bootstrapTaskName, BootstrapTask)
-            bootstrapTask.extension = extension
+            bootstrapTask.extension = publishingConfig
             bootstrapTask.applicationId = variantApplicationId
-            if (StringUtils.isNotEmpty(flavor)) {
+            if (flavor) {
                 bootstrapTask.outputFolder = new File(project.getProjectDir(), "src/${flavor}/play")
             } else {
                 bootstrapTask.outputFolder = new File(project.getProjectDir(), "src/${variant.buildType.name}/play")
@@ -70,11 +76,11 @@ class PlayPublisherPlugin implements Plugin<Project> {
             def playResourcesTask = project.tasks.create(playResourcesTaskName, GeneratePlayResourcesTask)
 
             playResourcesTask.inputs.file(new File(project.getProjectDir(), "src/main/play"))
-            if (StringUtils.isNotEmpty(flavor)) {
+            if (flavor) {
                 playResourcesTask.inputs.file(new File(project.getProjectDir(), "src/${flavor}/play"))
             }
             playResourcesTask.inputs.file(new File(project.getProjectDir(), "src/${variant.buildType.name}/play"))
-            if (StringUtils.isNotEmpty(flavor)) {
+            if (flavor) {
                 playResourcesTask.inputs.file(new File(project.getProjectDir(), "src/${variant.name}/play"))
             }
 
@@ -84,16 +90,16 @@ class PlayPublisherPlugin implements Plugin<Project> {
 
             // Create and configure publisher apk task for this variant.
             def publishApkTask = project.tasks.create(publishApkTaskName, PlayPublishApkTask)
-            publishApkTask.extension = extension
+            publishApkTask.extension = publishingConfig
             publishApkTask.variant = variant
             publishApkTask.applicationId = variantApplicationId
             publishApkTask.inputFolder = playResourcesTask.outputFolder
-            publishApkTask.description = "Uploads the APK for the ${variationName} build"
+            publishApkTask.description = "Uploads the APK for the ${variationName}"
             publishApkTask.group = PLAY_STORE_GROUP
 
             // Create and configure publisher meta task for this variant
             def publishListingTask = project.tasks.create(publishListingTaskName, PlayPublishListingTask)
-            publishListingTask.extension = extension
+            publishListingTask.extension = publishingConfig
             publishListingTask.applicationId = variantApplicationId
             publishListingTask.inputFolder = playResourcesTask.outputFolder
             publishListingTask.description = "Updates the play store listing for the ${variationName} build"
@@ -109,6 +115,16 @@ class PlayPublisherPlugin implements Plugin<Project> {
             publishListingTask.dependsOn playResourcesTask
             publishApkTask.dependsOn playResourcesTask
             publishApkTask.dependsOn assembleTask
+        }
+    }
+
+    def checkTrack(Project project, PublishingConfig extension) {
+        if (extension.track == "rollout" && extension.userFraction == null) {
+            throw new IllegalStateException("When publishing on rollout track, you must " +
+                    "declare a userFraction in your build.gradle")
+        } else if (extension.track != "rollout" && extension.userFraction != null) {
+            throw new IllegalStateException("You cannot declare a userFraction without" +
+                    "having a rollout track")
         }
     }
 

@@ -1,4 +1,4 @@
-package de.triplet.gradle.play
+package com.guillaumedelente.gradle.play
 
 import com.google.api.services.androidpublisher.AndroidPublisher
 import com.google.api.services.androidpublisher.model.AppEdit

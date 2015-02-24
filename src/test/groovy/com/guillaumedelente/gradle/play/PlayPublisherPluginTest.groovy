@@ -1,6 +1,7 @@
-package de.triplet.gradle.play
+package com.guillaumedelente.gradle.play
 
 import org.gradle.api.Project
+import org.gradle.api.ProjectConfigurationException
 import org.gradle.api.internal.plugins.PluginApplicationException
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
@@ -49,29 +50,71 @@ class PlayPublisherPluginTest {
         Project project = TestHelper.evaluatableProject()
         project.evaluate()
 
-        assertEquals('alpha', project.extensions.findByName("play").track)
+        assertEquals('alpha', project.publishingConfigs.release.track)
     }
 
     @Test
-    public void testTrack() {
+    public void testProductionTrack() {
         Project project = TestHelper.evaluatableProject()
 
-        project.play {
-            track 'production'
-        }
+        project.publishingConfigs.create('release')
+        project.publishingConfigs.release.track = 'production'
 
         project.evaluate()
 
-        assertEquals('production', project.extensions.findByName("play").track)
+        assertEquals('production', project.publishingConfigs.release.track)
+    }
+
+    @Test
+    public void testRolloutTrack() {
+        Project project = TestHelper.evaluatableProject()
+
+        project.publishingConfigs.create('release')
+        project.publishingConfigs.release.track = 'rollout'
+        project.publishingConfigs.release.userFraction = 0.5
+
+        project.evaluate()
+
+        assertEquals('rollout', project.publishingConfigs.release.track)
+        assertEquals(0.5D, (Double) project.publishingConfigs.release.userFraction, 0.01)
+    }
+
+    @Test(expected = ProjectConfigurationException.class)
+    public void testRolloutMustHaveUserFraction() {
+        Project project = TestHelper.evaluatableProject()
+
+        project.publishingConfigs.create('release')
+        project.publishingConfigs.release.track = 'rollout'
+
+        project.evaluate()
+    }
+
+    @Test(expected = ProjectConfigurationException.class)
+    public void testUserFractionIsOnlyWithRollout() {  	
+        Project project = TestHelper.evaluatableProject()
+
+        project.publishingConfigs.create('release')
+        project.publishingConfigs.release.track = 'alpha'
+        project.publishingConfigs.release.userFraction = 0.5
+
+        project.evaluate()
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testThrowsOnInvalidUserFraction() {
+        Project project = TestHelper.evaluatableProject()
+
+        project.publishingConfigs.create('release')
+        project.publishingConfigs.release.track = 'rollout'
+        project.publishingConfigs.release.userFraction = 0
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testThrowsOnInvalidTrack() {
         Project project = TestHelper.evaluatableProject()
 
-        project.play {
-            track 'gamma'
-        }
+        project.publishingConfigs.create('release')
+        project.publishingConfigs.release.track = 'gamma'
     }
 
     @Test

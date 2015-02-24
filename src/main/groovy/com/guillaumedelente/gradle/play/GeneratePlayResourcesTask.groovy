@@ -1,4 +1,4 @@
-package de.triplet.gradle.play
+package com.guillaumedelente.gradle.play
 
 import org.apache.commons.io.FileUtils
 import org.gradle.api.DefaultTask

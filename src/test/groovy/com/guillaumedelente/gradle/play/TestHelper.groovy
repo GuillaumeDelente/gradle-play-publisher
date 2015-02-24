@@ -1,4 +1,4 @@
-package de.triplet.gradle.play
+package com.guillaumedelente.gradle.play
 
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
@@ -13,7 +13,7 @@ public class TestHelper {
         project.apply plugin: 'play'
         project.android {
             compileSdkVersion 21
-            buildToolsVersion '21.1.0'
+            buildToolsVersion '21.1.2'
 
             defaultConfig {
                 versionCode 1

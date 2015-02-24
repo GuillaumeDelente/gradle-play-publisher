@@ -1,4 +1,4 @@
-package de.triplet.gradle.play
+package com.guillaumedelente.gradle.play
 
 class ImageFileFilter implements FileFilter {
     @Override

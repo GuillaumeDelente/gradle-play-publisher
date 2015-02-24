@@ -1,4 +1,4 @@
-package de.triplet.gradle.play
+package com.guillaumedelente.gradle.play
 
 import com.google.api.services.androidpublisher.AndroidPublisher
 import com.google.api.services.androidpublisher.model.AppEdit
@@ -9,7 +9,7 @@ class PlayPublishTask extends DefaultTask {
     // region '419' is a special case in the play store that represents latin america
     def matcher = ~"^[a-z]{2}(-([A-Z]{2}|419))?\\z"
 
-    PlayPublisherPluginExtension extension
+    PublishingConfig extension
 
     String applicationId
 
