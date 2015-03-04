@@ -1,15 +1,17 @@
 buildscript {
     repositories {
-        mavenCentral()
+        jcenter()
     }
 
     dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.0'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.3'
     }
 }
 
 apply plugin: 'groovy'
-apply from: 'gradle-mvn-push.gradle'
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
 
 group = GROUP
 version = VERSION_NAME
@@ -25,7 +27,7 @@ dependencies {
 
     compile gradleApi()
 
-    compile 'com.android.tools.build:gradle:1.1.2'
+    compile 'com.android.tools.build:gradle:1.1.0'
     compile ('com.google.apis:google-api-services-androidpublisher:v2-rev13-1.19.0') {
         exclude group: 'com.google.guava', module: 'guava-jdk5'
     }
@@ -35,44 +37,30 @@ dependencies {
     testCompile 'org.hamcrest:hamcrest-library:1.3'
 }
 
-task fatJar(type: Jar) {
-    baseName = project.name + '-all'
-    from (configurations.compile.collect { logger.warn("${it}"); it.isDirectory() ? it : zipTree(it)}) {
-        exclude "META-INF/*.SF"
-        exclude "META-INF/*.DSA"
-        exclude "META-INF/*.RSA"
-    }
-    with jar
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
 }
 
-afterEvaluate { project ->
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-
-                pom.project {
-                    developers {
-                        developer {
-                            id 'bhurling'
-                            name 'Bjoern Hurling'
-                        }
-                        developer {
-                            id 'ChristianBecker'
-                            name 'Christian Becker'
-                        }
-                        developer {
-                            id 'GuillaumeDelente'
-                            name 'Guillaume Delente'
-                        }
-                    }
-                }
-
-                pom.whenConfigured { pom ->
-                    pom.dependencies = pom.dependencies.findAll { dep ->
-                        dep.scope != 'test'
-                    }
-                }
-            }
+publishing {
+    publications {
+        mavenCustom(MavenPublication) {
+            from components.java
+            artifact sourcesJar
         }
+    }
+}
+
+bintray {
+    user = BINTRAY_USER
+    key = BINTRAY_KEY
+
+    publications = ['mavenCustom']
+    dryRun = false //Whether to run this as dry-run, without deploying
+    publish = true //If version should be auto published after an upload
+
+    pkg {
+        repo = 'maven'
+        name = 'gradle-play-publisher'
     }
 }

@@ -3,4 +3,5 @@ build
 *.iml
 .gradle
 local.properties
+gradle.properties
 .gradletasknamecache
